@@ -5,12 +5,25 @@ services:
     container_name: nestjs-skyrocket-template-redis
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.production.local
     ports:
-      - ${REDIS_PORT}:${REDIS_PORT}
+      - ${REDIS_PORT}:6379
     volumes:
       - nestjs-skyrocket-template-redis-volume:/data:rw
     command: redis-server --save 60 1 --loglevel warning
 
+  postgres:
+    image: postgres:16.8-alpine3.20
+    container_name: nestjs-skyrocket-template-postgres
+    shm_size: 128mb
+    restart: unless-stopped
+    env_file:
+      - .env.production.local
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - nestjs-skyrocket-template-postgres-volume:/var/lib/postgresql/data:rw
+
 volumes:
   nestjs-skyrocket-template-redis-volume:
+  nestjs-skyrocket-template-postgres-volume:
