@@ -23,7 +23,7 @@ Obviously.
 
 To handle requests, I will configure NestJS to use Fastify over ExpressJS.
 
-### Caching (Redis) 🏗️
+### Caching (Redis) ✅
 
 To cache responses and relieve database overhead, I will use a Redis cache.
 
