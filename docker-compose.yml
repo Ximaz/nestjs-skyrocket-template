@@ -1,0 +1,16 @@
+services:
+
+  redis:
+    image: redis:8.0-M04-alpine3.21
+    container_name: nestjs-skyrocket-template-redis
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    volumes:
+      - nestjs-skyrocket-template-redis-volume:/data:rw
+    command: redis-server --save 60 1 --loglevel warning
+
+volumes:
+  nestjs-skyrocket-template-redis-volume:
