@@ -1,12 +1,18 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { CACHE_MANAGER, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, Inject } from '@nestjs/common';
+import { Cache } from 'cache-manager';
+import LoggerService from 'src/logger/logger.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly logger: Logger) {
-    logger.log('This is simply a test log.', 'MY_LOG_TITLE');
-  }
+  constructor(
+    private readonly logger: LoggerService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   @Get()
+  @CacheKey('response')
+  @CacheTTL(10000)
   test() {
     return {
       data: [

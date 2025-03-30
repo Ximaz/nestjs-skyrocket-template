@@ -8,44 +8,24 @@ import {
 } from '@nestjs/platform-fastify';
 
 /** Winston Logger */
-import * as winston from 'winston';
-import {
-  utilities as nestWinstonModuleUtilities,
-  WinstonModule,
-} from 'nest-winston';
+import LoggerService from './logger/logger.service';
 
 /** Compression */
 import { constants } from 'node:zlib';
 import compression from '@fastify/compress';
-
-const createLogger = () =>
-  winston.createLogger({
-    transports: [
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.ms(),
-          nestWinstonModuleUtilities.format.nestLike('Nest', {
-            colors: true,
-            prettyPrint: true,
-            processId: true,
-            appName: true,
-          }),
-        ),
-      }),
-    ],
-  });
+import { Logger } from '@nestjs/common';
 
 const bootstrap = async () => {
+  const loggerService = new LoggerService();
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
     {
-      logger: WinstonModule.createLogger({
-        instance: createLogger(),
-      }),
+      logger: loggerService,
     },
   );
+
+  Logger.overrideLogger(loggerService);
 
   // Fine-tuning is required here.
   await app.register(compression, {
