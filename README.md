@@ -9,48 +9,36 @@ https://medium.com/@ahmed.soliman/how-to-make-nestjs-blazing-fast-5949e178346f
 
 ## Tech Stack
 
-### Package manager
+### Package manager (PNPM) ✅
 
 I will go with `pnpm` for my projects. I think you can use any other one, just
 personnal preference, and it has no direct impact on how well your application
 is running (As far as I know).
 
-### Typescript
+### Typescript ✅
 
 Obviously.
 
-### HTTP Server (Fastify)
+### HTTP Server (Fastify) ✅
 
 To handle requests, I will configure NestJS to use Fastify over ExpressJS.
 
-### Caching (Redis)
+### Caching (Redis) 🏗️
 
 To cache responses and relieve database overhead, I will use a Redis cache.
 
-### Logging (Nest Winston)
+### Logging (Nest Winston) ✅
 
 Based on the article I read, using a good logger is crucial in order to not
 block the main thread. I will use the NestJS Winston logger.
 
-### Scopes (Nest IoC)
+### Scopes (Nest IoC) ✅
 
 In the article, it is recommanded not to inject scope when creating controllers
 and services, as it can lead to memory overhead. You should use those for
 specific situations, but most of the time, you will not need them.
 
-### ORM (MikroORM)
-
-I heard many things about ORMs. I have personally tried Prisma and Drizzle, and
-I read some opinions about them. In one hand, Prisma offers great a great
-developer experience, which I agree to, but the trade off are performances, and
-in the other hand, Drizzle offers performance, but the trade off is you have to
-deal with everything yourself. I'm not talking about raw SQL itself, but rather
-error handling and so on.
-
-I then read about another ORM called MikroORM which aims to take the good about
-both ORMs, so I will incorporate it.
-
-### Compression (Brotli algorithm)
+### Compression (Brotli algorithm) ✅
 
 While reading the article, I stumbled on the `Compression` section. I totally
 did forget about such thing while creating my backend application, whereas it
@@ -63,7 +51,19 @@ the configuration and the purpose of the web application, but I am all-in, the
 worst that can happen is I will learn. And I believe it can not be worse than
 no compression at all.
 
-### Database (PostgreSQL)
+### ORM (MikroORM) 🏗️
+
+I heard many things about ORMs. I have personally tried Prisma and Drizzle, and
+I read some opinions about them. In one hand, Prisma offers great a great
+developer experience, which I agree to, but the trade off are performances, and
+in the other hand, Drizzle offers performance, but the trade off is you have to
+deal with everything yourself. I'm not talking about raw SQL itself, but rather
+error handling and so on.
+
+I then read about another ORM called MikroORM which aims to take the good about
+both ORMs, so I will incorporate it.
+
+### Database (PostgreSQL) 🏗️
 
 This section is one I can not address in my template, because it depends on you
 as a developer, to correctly index your database columns. If you need to use a
@@ -77,7 +77,7 @@ not explain it in depth here.
 Also, I will use a PostgreSQL database, because that is the one I am the most
 confortable with. But I guess you can configure another one youself.
 
-### Async vs Sync methods
+### Async vs Sync methods ✅
 
 You should try to avoid as much as possible to use synchronous I/O operations
 as it blocks the main thread (being the only one your application has).
@@ -95,7 +95,7 @@ A solution to this issue is to use workers. There is an article which explains
 how to do this right here :
 https://medium.com/@Abdelrahman_Rezk/understanding-worker-threads-in-nestjs-a-hands-on-guide-with-fibonacci-example-6f09998e9129
 
-### OpenAPI
+### OpenAPI 🏗️
 
 One of the most crucial point of an API is its documentation. THe main goal of
 an API is not to be a black box but to actually know what it does, what you
