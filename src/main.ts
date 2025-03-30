@@ -1,14 +1,22 @@
 import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+/** Fastify over Express */
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { AppModule } from './app.module';
+
+/** Winston Logger */
 import * as winston from 'winston';
 import {
   utilities as nestWinstonModuleUtilities,
   WinstonModule,
 } from 'nest-winston';
+
+/** Compression */
+import { constants } from 'node:zlib';
+import compression from '@fastify/compress';
 
 const createLogger = () =>
   winston.createLogger({
@@ -39,7 +47,10 @@ const bootstrap = async () => {
     },
   );
 
-  // app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+  // Fine-tuning is required here.
+  await app.register(compression, {
+    brotliOptions: { params: { [constants.BROTLI_PARAM_QUALITY]: 4 } },
+  });
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 };
