@@ -9,6 +9,12 @@ https://medium.com/@ahmed.soliman/how-to-make-nestjs-blazing-fast-5949e178346f
 
 ## Tech Stack
 
+### Package manager
+
+I will go with `pnpm` for my projects. I think you can use any other one, just
+personnal preference, and it has no direct impact on how well your application
+is running (As far as I know).
+
 ### Typescript
 
 Obviously.
