@@ -63,7 +63,7 @@ error handling and so on.
 I then read about another ORM called MikroORM which aims to take the good about
 both ORMs, so I will incorporate it.
 
-### Database (PostgreSQL) 🏗️
+### Database (PostgreSQL) ✅
 
 This section is one I can not address in my template, because it depends on you
 as a developer, to correctly index your database columns. If you need to use a
@@ -95,7 +95,7 @@ A solution to this issue is to use workers. There is an article which explains
 how to do this right here :
 https://medium.com/@Abdelrahman_Rezk/understanding-worker-threads-in-nestjs-a-hands-on-guide-with-fibonacci-example-6f09998e9129
 
-### OpenAPI 🏗️
+### OpenAPI ✅
 
 One of the most crucial point of an API is its documentation. THe main goal of
 an API is not to be a black box but to actually know what it does, what you
