@@ -49,7 +49,7 @@ const bootstrap = async () => {
 
   // Fine-tuning is required here.
   await app.register(compression, {
-    brotliOptions: { params: { [constants.BROTLI_PARAM_QUALITY]: 4 } },
+    brotliOptions: { params: { [constants.BROTLI_PARAM_QUALITY]: 1 } },
   });
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
