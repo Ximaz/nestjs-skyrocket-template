@@ -51,7 +51,7 @@ the configuration and the purpose of the web application, but I am all-in, the
 worst that can happen is I will learn. And I believe it can not be worse than
 no compression at all.
 
-### ORM (MikroORM) 🏗️
+### ORM (Prisma) ✅
 
 I heard many things about ORMs. I have personally tried Prisma and Drizzle, and
 I read some opinions about them. In one hand, Prisma offers great a great
@@ -60,8 +60,9 @@ in the other hand, Drizzle offers performance, but the trade off is you have to
 deal with everything yourself. I'm not talking about raw SQL itself, but rather
 error handling and so on.
 
-I then read about another ORM called MikroORM which aims to take the good about
-both ORMs, so I will incorporate it.
+I really like Prisma, and the fact that the way queries were made got reworked
+makes me want to use it for this template. It seems it stops use a proxy to
+query databases, so it is pretty nice now.
 
 ### Database (PostgreSQL) ✅
 

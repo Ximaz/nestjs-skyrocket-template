@@ -13,6 +13,9 @@ import { LoggerModule } from './logger/logger.module';
 
 /** My Modules */
 import { UsersModule } from './users/users.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { Argon2idModule } from './argon2id/argon2id.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -22,12 +25,11 @@ import { UsersModule } from './users/users.module';
       inject: [ConfigService],
       useFactory(configService: ConfigService) {
         const redisHost = configService.get<string>('REDIS_HOST');
-        const redisPort = configService.get<number>('REDIS_PORT');
 
         return {
           stores: [
             // Default cache
-            createKeyv(`redis://${redisHost}:${redisPort}`),
+            createKeyv(`redis://${redisHost}:6379`),
 
             // Fallback cache (in-memory)
             new Keyv({
@@ -37,7 +39,10 @@ import { UsersModule } from './users/users.module';
         };
       },
     }),
+    PrismaModule,
     UsersModule,
+    Argon2idModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
