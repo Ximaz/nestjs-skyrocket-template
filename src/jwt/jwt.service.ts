@@ -6,7 +6,6 @@ import {
   importPKCS8,
   SignJWT,
   CompactEncrypt,
-  JWTPayload,
   compactDecrypt,
   jwtVerify,
 } from 'jose';
@@ -54,7 +53,7 @@ export class JwtService {
   }
 
   async forgeJwe(payload: DecryptedToken): Promise<BearerToken> {
-    const jws = await new SignJWT(payload as unknown as JWTPayload)
+    const jws = await new SignJWT(payload)
       .setProtectedHeader({ alg: JwtService.JWS_ALG })
       .setIssuedAt()
       .setIssuer(this.issuer)
@@ -95,7 +94,6 @@ export class JwtService {
       algorithms: [JwtService.JWS_ALG],
       maxTokenAge: this.expiresIn,
     });
-
-    return payload as unknown as DecryptedToken;
+    return payload as DecryptedToken;
   }
 }

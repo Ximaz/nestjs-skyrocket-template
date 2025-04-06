@@ -27,7 +27,12 @@ export class JwtGuard implements CanActivate {
     const token = this.extractBearerToken(request);
 
     const decryptedToken = await this.validate(token);
-    Object.defineProperty(request, 'user', decryptedToken);
+
+    Object.defineProperty(request, 'user', {
+      configurable: true,
+      value: decryptedToken,
+    });
+
     return true;
   }
 

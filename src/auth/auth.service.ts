@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -12,6 +13,9 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { User } from '@prisma/client';
 import { JwtService } from 'src/jwt/jwt.service';
 import { BearerToken } from '../jwt/entity/token';
+import { AuthenticatedRequest } from 'typings';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +23,7 @@ export class AuthService {
     private readonly argon2idService: Argon2idService,
     private readonly prismaService: PrismaService,
     private readonly jwtService: JwtService,
+    @Inject(CACHE_MANAGER) private readonly cacheService: Cache,
   ) {}
 
   async login(loginDto: LoginDto): Promise<BearerToken> {
@@ -78,7 +83,15 @@ export class AuthService {
       throw e;
     }
 
-    // TODO: create a secured JWT.
     return this.jwtService.forgeJwe({ userId: user.id });
+  }
+
+  async logout(req: AuthenticatedRequest) {
+    console.log(req.user);
+    const jwe = req.headers.authorization!.slice(7);
+    const { exp } = req.user;
+
+    const ttl = exp! * 1000 - Date.now();
+    if (0 < ttl) await this.cacheService.set(jwe, 'LOGOUT', ttl);
   }
 }
