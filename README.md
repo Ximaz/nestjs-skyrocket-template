@@ -107,3 +107,11 @@ package. It will allow you to describe your routes, their queries, params, DTOs
 and response. It's very useful and it even lets you test your API inside the
 web browser, so you do not have to wait for the frontend team or use another
 tool like Postman.
+
+## Crypto
+
+There is a crypto folder at the root of the project which allows you to create
+an RSA public and private keys used to encrypt and decrypt JWTs. It will also
+create two text files, one including a secret key you can use to sign the JWT
+and the other containing the secret key used to sign sessions, in case you want
+to use cookies.
