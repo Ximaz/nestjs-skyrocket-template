@@ -16,8 +16,6 @@ export class UsersService {
     private readonly argon2idService: Argon2idService,
   ) {}
 
-  // async create() {}
-
   async retrieve(id: User['id']) {
     const user = await this.prismaService.user.findUnique({
       where: { id },

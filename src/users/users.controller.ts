@@ -1,32 +1,32 @@
-import { CACHE_MANAGER, CacheInterceptor } from '@nestjs/cache-manager';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import {
   Body,
   Controller,
   Delete,
   Get,
-  Inject,
   Param,
   ParseIntPipe,
   Patch,
   Query,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { Cache } from 'cache-manager';
 import LoggerService from 'src/logger/logger.service';
 import { UsersService } from './users.service';
 import { User } from '@prisma/client';
 import UpdateUserDto from './dto/update-user.dto';
+import { JwtGuard } from 'src/auth/guards/jwt.guard';
 
 @Controller('/users')
 @UseInterceptors(CacheInterceptor)
 export class UsersController {
   constructor(
     private readonly loggerService: LoggerService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly usersService: UsersService,
   ) {}
 
   @Get('/')
+  @UseGuards(JwtGuard)
   index(
     @Query('pageNumber', ParseIntPipe) pageNumber: number = 0,
     @Query('pageSize', ParseIntPipe) pageSize: number = 100,
@@ -38,12 +38,14 @@ export class UsersController {
   }
 
   @Get('/:id')
+  @UseGuards(JwtGuard)
   retrieve(@Param('id') id: User['id']) {
     this.loggerService.debug(`[UsersController::retrieve]: id = ${id}`);
     return this.usersService.retrieve(id);
   }
 
   @Patch('/:id')
+  @UseGuards(JwtGuard)
   update(@Param('id') id: User['id'], @Body() updateUserDto: UpdateUserDto) {
     this.loggerService.debug(
       `[UsersController::update]: id = ${id}; updateUserDto: ${JSON.stringify(updateUserDto)}`,
@@ -52,6 +54,7 @@ export class UsersController {
   }
 
   @Delete('/:id')
+  @UseGuards(JwtGuard)
   delete(@Param('id') id: User['id']) {
     this.loggerService.debug(`[UsersController::delete]: id = ${id}`);
     return this.usersService.delete(id);

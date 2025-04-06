@@ -10,19 +10,21 @@ import LoginDto from './dto/login.dto';
 import RegisterDto from './dto/register.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { User } from '@prisma/client';
-import LoggerService from 'src/logger/logger.service';
+import { JwtService } from 'src/jwt/jwt.service';
+import { BearerToken } from '../jwt/entity/token';
+
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly loggerService: LoggerService,
     private readonly argon2idService: Argon2idService,
     private readonly prismaService: PrismaService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto): Promise<BearerToken> {
     const user = await this.prismaService.user.findUnique({
       where: { email: loginDto.email },
-      select: { hashedPassword: true },
+      select: { hashedPassword: true, id: true },
     });
 
     // We are doing fake computation for timing-based attack, so the attacker
@@ -51,10 +53,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials.');
 
     // TODO: create a secured JWT.
-    return { status: 'ok' };
+    return this.jwtService.forgeJwe({ userId: user.id });
   }
 
-  async register(registerDto: RegisterDto) {
+  async register(registerDto: RegisterDto): Promise<BearerToken> {
     const hashedPassword = await this.argon2idService.hashPassword(
       registerDto.password,
     );
@@ -77,6 +79,6 @@ export class AuthService {
     }
 
     // TODO: create a secured JWT.
-    return { status: 'ok' };
+    return this.jwtService.forgeJwe({ userId: user.id });
   }
 }
