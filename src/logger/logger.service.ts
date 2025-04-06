@@ -1,24 +1,29 @@
-import { LoggerService as LS } from '@nestjs/common';
+import { Injectable, LoggerService as LS } from '@nestjs/common';
 import * as winston from 'winston';
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 
+@Injectable()
 export default class LoggerService implements LS {
-  private readonly logger: winston.Logger = winston.createLogger({
-    transports: [
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.ms(),
-          nestWinstonModuleUtilities.format.nestLike('Nest', {
-            colors: true,
-            prettyPrint: true,
-            processId: true,
-            appName: true,
-          }),
-        ),
-      }),
-    ],
-  });
+  private readonly logger: winston.Logger;
+  constructor() {
+    this.logger = winston.createLogger({
+      level: 'debug',
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.ms(),
+            nestWinstonModuleUtilities.format.nestLike('Nest', {
+              colors: true,
+              prettyPrint: true,
+              processId: true,
+              appName: true,
+            }),
+          ),
+        }),
+      ],
+    });
+  }
 
   log(message: string) {
     this.logger.info(message);

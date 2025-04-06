@@ -32,26 +32,31 @@ const getSwaggerDocumentConfig = (): Omit<OpenAPIObject, 'paths'> =>
       'This document indexes all the available routes, along with their params, queries, payloads and responses.',
     )
     .setVersion('1.0')
-    // .addBearerAuth({
-    //     type: "http",
-    //     description:
-    //         "An encrypted JWT returned by the 'register' or 'login' endpoint.",
-    //     name: "bearer"
-    // })
+    .addBearerAuth({
+      type: 'http',
+      description:
+        "An encrypted JWT returned by the 'auth/register' or 'auth/login' endpoint.",
+      name: 'bearer',
+    })
+    .addTag(
+      'Authentication',
+      'All the endpoints related to authentication process.',
+    )
+    .addTag(
+      'Users',
+      'All the endpoints related to the users management and queries.',
+    )
     .build();
 
 const bootstrap = async () => {
   /** Create the application and override the default logger */
-  const loggerService = new LoggerService();
-
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
-    {
-      logger: loggerService,
-    },
   );
 
+  const loggerService = app.get(LoggerService);
+  app.useLogger(loggerService);
   Logger.overrideLogger(loggerService);
 
   /** Setup the ValidationPipe to transform DTOs types correctly */

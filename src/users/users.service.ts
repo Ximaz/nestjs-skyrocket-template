@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,20 +8,27 @@ import { User } from '@prisma/client';
 import UpdateUserDto from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Argon2idService } from 'src/argon2id/argon2id.service';
-import { Page } from 'typings';
+import { AuthenticatedRequest, Page } from 'typings';
+import { UserIndex, UserRetrieve } from './entities/user.entity';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly argon2idService: Argon2idService,
+    private readonly authService: AuthService,
   ) {}
 
-  async retrieve(id: User['id']) {
+  async retrieve(
+    id: User['id'],
+    req: AuthenticatedRequest,
+  ): Promise<UserRetrieve> {
+    const isMyself = req.user.userId === id;
+
     const user = await this.prismaService.user.findUnique({
       where: { id },
-
-      select: { firstname: true, lastname: true },
+      select: { id: true, firstname: true, lastname: true, email: isMyself },
     });
 
     if (null === user) throw new NotFoundException('User not found.');
@@ -28,7 +36,7 @@ export class UsersService {
     return user;
   }
 
-  index({ pageNumber, pageSize }: Page) {
+  index({ pageNumber, pageSize }: Page): Promise<UserIndex[]> {
     return this.prismaService.user.findMany({
       skip: pageNumber * pageSize,
       take: pageSize,
@@ -40,7 +48,14 @@ export class UsersService {
     });
   }
 
-  async update(id: User['id'], updateUserDto: UpdateUserDto) {
+  async update(
+    id: User['id'],
+    updateUserDto: UpdateUserDto,
+    req: AuthenticatedRequest,
+  ) {
+    if (id !== req.user.userId)
+      throw new ForbiddenException('Unallowed to modify this user.');
+
     const payload: Partial<User> = {};
 
     if (undefined !== updateUserDto.email) {
@@ -76,8 +91,13 @@ export class UsersService {
     });
   }
 
-  delete(id: User['id']) {
-    return this.prismaService.user.delete({
+  async delete(id: User['id'], req: AuthenticatedRequest): Promise<void> {
+    if (id !== req.user.userId)
+      throw new ForbiddenException('Unallowed to delete this user.');
+
+    await this.authService.logout(req);
+
+    await this.prismaService.user.delete({
       where: { id },
     });
   }

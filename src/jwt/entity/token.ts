@@ -1,9 +1,16 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { JWTPayload } from 'jose';
 
 export type EncryptedToken = string;
 
-export type BearerToken = { bearerToken: EncryptedToken };
+export class BearerToken {
+  @ApiProperty({
+    description:
+      'The encrypted JWT API Bearer token. It must be passed to all protected route via HTTP Authorization header.',
+  })
+  readonly bearerToken: EncryptedToken;
+}
 
 export class DecryptedToken implements JWTPayload {
   [propName: string]: unknown;

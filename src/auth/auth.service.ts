@@ -57,7 +57,6 @@ export class AuthService {
     if (!passwordsMatch)
       throw new UnauthorizedException('Invalid credentials.');
 
-    // TODO: create a secured JWT.
     return this.jwtService.forgeJwe({ userId: user.id });
   }
 
@@ -86,7 +85,7 @@ export class AuthService {
     return this.jwtService.forgeJwe({ userId: user.id });
   }
 
-  async logout(req: AuthenticatedRequest) {
+  async logout(req: AuthenticatedRequest): Promise<void> {
     const jwe = req.headers.authorization!.slice(7);
     const { exp } = req.user;
 
