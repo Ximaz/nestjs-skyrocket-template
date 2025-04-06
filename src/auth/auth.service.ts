@@ -87,7 +87,6 @@ export class AuthService {
   }
 
   async logout(req: AuthenticatedRequest) {
-    console.log(req.user);
     const jwe = req.headers.authorization!.slice(7);
     const { exp } = req.user;
 
