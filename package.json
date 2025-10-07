@@ -8,9 +8,9 @@
   "type": "module",
   "scripts": {
     "build": "nest build",
-    "start": "node --env-file=.env.local dist/src/main",
-    "start:dev": "node --env-file=.env.local dist/src/main --watch",
-    "start:debug": "node --env-file=.env.local dist/src/main --debug --watch",
+    "start": "dotenv -e .env.local --expand -- node dist/src/main",
+    "start:dev": "dotenv -e .env.local --expand -- node dist/src/main --watch",
+    "start:debug": "dotenv -e .env.local --expand -- node dist/src/main --debug --watch",
     "start:prod": "node dist/src/main",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint --fix src/**/*.ts",
@@ -21,11 +21,11 @@
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "test:debug": "NODE_OPTIONS=--experimental-vm-modules node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "prisma:reset": "prisma migrate reset",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma:reset": "dotenv -e .env.local -- prisma migrate reset",
+    "prisma:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "prisma:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio"
+    "prisma:deploy": "dotenv -e .env.local -- prisma migrate deploy",
+    "prisma:studio": "dotenv -e .env.local -- prisma studio"
   },
   "dependencies": {
     "@fastify/compress": "^8.1.0",
@@ -68,6 +68,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.7",
     "@types/supertest": "^6.0.2",
+    "dotenv-cli": "^10.0.0",
+    "dotenv-expand": "^12.0.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
