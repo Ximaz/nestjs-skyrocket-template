@@ -1,4 +1,4 @@
-# NestJS Skyrocket Template (under construction)
+# NestJS Skyrocket Template
 
 This project aims to provide an optimized NestJS workflow to create nice APIs.
 

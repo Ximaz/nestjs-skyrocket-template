@@ -1,29 +1,21 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATASOURCE_URL")
 }
 
 model User {
-  /// The User's ID. It is a UUID to prevent guesses.
-  id             String @id @default(uuid())
-  /// The User's firstname.
-  firstname      String
-  /// The User's lastname.
-  lastname       String
-  /// The User's email. It must be unique as it is an authentication vector.
-  email          String @unique
-  /// The User's hashed password.
-  hashedPassword String @map("hashed_password")
+    sub        String    @id
+    email      String    @unique
+    givenName  String    @map("given_name")
+    familyName String    @map("family_name")
+    picture    String?
+    createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+    deletedAt  DateTime? @map("deleted_at")
 
-  @@map("user")
+    @@map("user")
 }
