@@ -1,24 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService, JwtServiceKeyPathOptions } from './jwt.service.js';
-import { ConfigService } from '@nestjs/config';
-
-const fakeEnv: Record<string, string> = {
-  JOSE_ENCYPTION_PUBLIC_KEY_PATH: '/tmp/JOSE_ENCYPTION_PUBLIC_KEY.jwk',
-  JOSE_ENCYPTION_PRIVATE_KEY_PATH: '/tmp/JOSE_ENCYPTION_PRIVATE_KEY.jwk',
-  JOSE_SIGN_PUBLIC_KEY_PATH: '/tmp/JOSE_SIGN_PUBLIC_KEY.jwk',
-  JOSE_SIGN_PRIVATE_KEY_PATH: '/tmp/JOSE_SIGN_PRIVATE_KEY.jwk',
-  JWT_AUDIENCE: 'AUDIENCE',
-  JWT_ISSUER: 'ISSUER',
-};
-
-const mockedConfigService = {
-  getOrThrow(key: string) {
-    const value = fakeEnv[key];
-    if (undefined === value)
-      throw new Error(`${key} not found in environment variables.`);
-    return value;
-  },
-};
 
 describe('JwtService', () => {
   let service: JwtService;
@@ -27,38 +8,25 @@ describe('JwtService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
-          provide: ConfigService,
-          useValue: mockedConfigService,
-        },
-        {
           provide: JwtService,
-          inject: [ConfigService],
-          async useFactory(configService: ConfigService) {
-            const jwtServiceKeyPaths = {
+          useFactory: async () => {
+            const config = {
               encryptKeys: {
-                publicPath: configService.getOrThrow<string>(
-                  'JOSE_ENCYPTION_PUBLIC_KEY_PATH',
-                ),
-                privatePath: configService.getOrThrow<string>(
-                  'JOSE_ENCYPTION_PRIVATE_KEY_PATH',
-                ),
+                publicPath: '/tmp/JOSE_ENCYPTION_PUBLIC_KEY.jwk',
+                privatePath: '/tmp/JOSE_ENCYPTION_PRIVATE_KEY.jwk',
               },
               signKeys: {
-                publicPath: configService.getOrThrow<string>(
-                  'JOSE_SIGN_PUBLIC_KEY_PATH',
-                ),
-                privatePath: configService.getOrThrow<string>(
-                  'JOSE_SIGN_PRIVATE_KEY_PATH',
-                ),
+                publicPath: '/tmp/JOSE_SIGN_PUBLIC_KEY.jwk',
+                privatePath: '/tmp/JOSE_SIGN_PRIVATE_KEY.jwk',
               },
             } satisfies JwtServiceKeyPathOptions;
 
-            const jwtServiceKeys = await JwtService.getKeys(jwtServiceKeyPaths);
+            const jwtServiceKeys = await JwtService.getKeys(config);
 
             return new JwtService({
               ...jwtServiceKeys,
-              audience: configService.getOrThrow<string>('JWT_AUDIENCE'),
-              issuer: configService.getOrThrow<string>('JWT_ISSUER'),
+              audience: 'AUDIENCE',
+              issuer: 'ISSUER',
             });
           },
         },
