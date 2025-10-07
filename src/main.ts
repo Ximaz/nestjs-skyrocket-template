@@ -1,28 +1,18 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-
-/** Fastify over Express */
+import { constants } from 'node:zlib';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-
-/** Winston Logger */
-import LoggerService from './logger/logger.service';
 import { Logger, ValidationPipe } from '@nestjs/common';
-
-/** Compression */
-import { constants } from 'node:zlib';
-import compression from '@fastify/compress';
-
-/** OpenAPI */
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module.js';
+import { LoggerService } from './logger/logger.service.js';
 import {
   DocumentBuilder,
   OpenAPIObject,
   SwaggerCustomOptions,
   SwaggerModule,
 } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 
 const getSwaggerDocumentConfig = (): Omit<OpenAPIObject, 'paths'> =>
@@ -38,18 +28,10 @@ const getSwaggerDocumentConfig = (): Omit<OpenAPIObject, 'paths'> =>
         "An encrypted JWT returned by the 'auth/register' or 'auth/login' endpoint.",
       name: 'bearer',
     })
-    .addTag(
-      'Authentication',
-      'All the endpoints related to authentication process.',
-    )
-    .addTag(
-      'Users',
-      'All the endpoints related to the users management and queries.',
-    )
+    .addTag('OAuth2.0', 'All the endpoints related to authentication process.')
     .build();
 
-const bootstrap = async () => {
-  /** Create the application and override the default logger */
+async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
@@ -59,18 +41,23 @@ const bootstrap = async () => {
   app.useLogger(loggerService);
   Logger.overrideLogger(loggerService);
 
-  /** Setup the ValidationPipe to transform DTOs types correctly */
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      // forbidNonWhitelisted: true,
+    }),
+  );
 
-  /** Setup the Accept-Control-Allow-Origin for CORS security */
-  const configService = app.get(ConfigService);
-  const trustedOrigin = configService.getOrThrow<string>('ORIGIN');
   app.enableCors({
-    origin: trustedOrigin,
+    origin: '*',
     credentials: true,
   });
 
-  /** Setup the Swagger OpenAPI documentation */
+  await app.register(import('@fastify/compress'), {
+    brotliOptions: { params: { [constants.BROTLI_PARAM_QUALITY]: 1 } },
+  });
+
   const swaggerDocumentationConfig = getSwaggerDocumentConfig();
   const document = SwaggerModule.createDocument(
     app,
@@ -84,13 +71,7 @@ const bootstrap = async () => {
   };
   SwaggerModule.setup('/openapi', app, document, swaggerConfig);
 
-  /** Setup the response compression middleware */
-  await app.register(compression, {
-    brotliOptions: { params: { [constants.BROTLI_PARAM_QUALITY]: 1 } },
-  });
-
-  const port = configService.get<number>('PORT', 3000);
-  await app.listen(port, '0.0.0.0');
-};
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+}
 
 bootstrap().catch(console.error);

@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Argon2idService } from './argon2id.service';
+import { OauthService } from './oauth.service.js';
 
-describe('Argon2idService', () => {
-  let service: Argon2idService;
+describe('OauthService', () => {
+  let service: OauthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [Argon2idService],
+      providers: [{ provide: OauthService, useValue: new OauthService({}) }],
     }).compile();
 
-    service = module.get<Argon2idService>(Argon2idService);
+    service = module.get<OauthService>(OauthService);
   });
 
   it('should be defined', () => {

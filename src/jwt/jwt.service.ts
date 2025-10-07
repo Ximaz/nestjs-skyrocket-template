@@ -1,99 +1,211 @@
+import { KeyObject } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
-  CryptoKey,
-  importSPKI,
-  importPKCS8,
-  SignJWT,
-  CompactEncrypt,
   compactDecrypt,
+  CompactEncrypt,
+  exportJWK,
+  generateKeyPair,
+  importJWK,
+  JWK,
+  JWTPayload,
   jwtVerify,
+  SignJWT,
 } from 'jose';
-import { BearerToken, DecryptedToken, EncryptedToken } from './entity/token';
+
+declare type JwtServiceKey =
+  | CryptoKey
+  | KeyObject
+  | JWK
+  | Uint8Array<ArrayBufferLike>;
+
+export declare interface JwtServiceKeyPathOptions {
+  encryptKeys: {
+    publicPath: string;
+    privatePath: string;
+  };
+  signKeys: {
+    publicPath: string;
+    privatePath: string;
+  };
+}
+
+declare interface JwtServiceKeys {
+  encryptKeys: {
+    public: JwtServiceKey;
+    private: JwtServiceKey;
+  };
+  signKeys: {
+    public: JwtServiceKey;
+    private: JwtServiceKey;
+  };
+}
 
 @Injectable()
 export class JwtService {
-  private secret: Uint8Array;
-  private issuer: string;
-  private expiresIn: string;
-  private jwtRSAPublicKey: string;
-  private publicKey: CryptoKey | null = null;
-  private jwtRSAPrivateKey: string;
-  private privateKey: CryptoKey | null = null;
-  public static JWS_ALG: string = 'HS512';
-  public static JWE_ALG: string = 'RSA-OAEP-512';
-  public static JWE_ENC: string = 'A256GCM';
+  private static readonly JOSE_ALG = 'RSA-OAEP-256';
+  private static readonly JOSE_ENC = 'A256GCM';
+  private static readonly JWT_ALG = 'RS256';
 
-  constructor(private readonly configService: ConfigService) {
-    const secret = this.configService.getOrThrow<string>('JWT_SECRET');
-    if (32 !== secret.length)
-      throw new Error('The JWS secret key must be 32 bytes long.');
-    this.secret = new TextEncoder().encode(secret);
-
-    this.issuer = this.configService.getOrThrow<string>('JWT_ISSUER');
-
-    this.expiresIn = this.configService.getOrThrow<string>('JWT_EXPIRES_IN');
-
-    this.jwtRSAPublicKey =
-      this.configService.getOrThrow<string>('JWE_PUBLIC_KEY');
-
-    this.jwtRSAPrivateKey =
-      this.configService.getOrThrow<string>('JWE_PRIVATE_KEY');
+  constructor(
+    private readonly options: JwtServiceKeys & {
+      issuer: string;
+      audience: string;
+    },
+  ) {
+    this.options = options;
   }
 
-  private async loadPublicKey() {
-    this.publicKey = await importSPKI(this.jwtRSAPublicKey, JwtService.JWE_ALG);
+  private static async saveKey(path: string, key: JWK) {
+    await writeFile(path, JSON.stringify(key, null, 0), {
+      encoding: 'ascii',
+      mode: 0o600,
+    });
   }
 
-  private async loadPrivateKey() {
-    this.privateKey = await importPKCS8(
-      this.jwtRSAPrivateKey,
-      JwtService.JWE_ALG,
+  private static async exportKeyPair(
+    alg: string,
+    options: {
+      publicPath: string;
+      privatePath: string;
+    },
+  ): Promise<{ public: JWK; private: JWK }> {
+    const { publicKey, privateKey } = await generateKeyPair(alg, {
+      modulusLength: 4096,
+      extractable: true,
+    });
+
+    const publicJWK = await exportJWK(publicKey);
+    await JwtService.saveKey(options.publicPath, {
+      ...publicJWK,
+      alg: publicKey.algorithm.name,
+      // alg: alg,
+    });
+
+    const privateJWK = await exportJWK(privateKey);
+    await JwtService.saveKey(options.privatePath, {
+      ...privateJWK,
+      alg: privateKey.algorithm.name,
+      // alg: alg,
+    });
+
+    return {
+      public: publicJWK,
+      private: privateJWK,
+    };
+  }
+
+  private static async exportKeyPairs(
+    options: JwtServiceKeyPathOptions,
+  ): Promise<JwtServiceKeys> {
+    const encryptKeys = await JwtService.exportKeyPair(
+      JwtService.JOSE_ALG,
+      options.encryptKeys,
     );
+
+    const signKeys = await JwtService.exportKeyPair(
+      JwtService.JWT_ALG,
+      options.signKeys,
+    );
+
+    return {
+      encryptKeys,
+      signKeys,
+    };
   }
 
-  async forgeJwe(payload: DecryptedToken): Promise<BearerToken> {
-    const jws = await new SignJWT(payload)
-      .setProtectedHeader({ alg: JwtService.JWS_ALG })
+  private static async loadKey(path: string) {
+    const rawJwk = await readFile(path, 'ascii');
+
+    const jwk = JSON.parse(rawJwk) as JWK;
+
+    return jwk;
+  }
+
+  private static async loadKeyPair(
+    alg: string,
+    options: {
+      publicPath: string;
+      privatePath: string;
+    },
+  ) {
+    const publicRawJWK = await JwtService.loadKey(options.publicPath);
+    const publicJWK = await importJWK(publicRawJWK, alg);
+
+    const privateRawJWK = await JwtService.loadKey(options.privatePath);
+    const privateJWK = await importJWK(privateRawJWK, alg);
+
+    return { public: publicJWK, private: privateJWK };
+  }
+
+  private static async loadKeyPairs(
+    options: JwtServiceKeyPathOptions,
+  ): Promise<JwtServiceKeys | null> {
+    try {
+      const encryptKeys = await JwtService.loadKeyPair(
+        JwtService.JOSE_ALG,
+        options.encryptKeys,
+      );
+
+      const signKeys = await JwtService.loadKeyPair(
+        JwtService.JWT_ALG,
+        options.signKeys,
+      );
+
+      return {
+        encryptKeys,
+        signKeys,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  static async getKeys(
+    options: JwtServiceKeyPathOptions,
+  ): Promise<JwtServiceKeys> {
+    const keys = await JwtService.loadKeyPairs(options);
+    if (null !== keys) return keys;
+    return await JwtService.exportKeyPairs(options);
+  }
+
+  async create(payload: JWTPayload, expiresIn: number) {
+    const jwt = await new SignJWT(payload)
+      .setProtectedHeader({ alg: JwtService.JWT_ALG, typ: 'JWT' })
       .setIssuedAt()
-      .setIssuer(this.issuer)
-      .setExpirationTime(this.expiresIn)
-      .sign(this.secret);
-    const encodedJws = new TextEncoder().encode(jws);
+      .setExpirationTime(new Date(Date.now() + expiresIn))
+      .setAudience(this.options.audience)
+      .setIssuer(this.options.issuer)
+      .sign(this.options.signKeys.private);
 
-    if (null === this.publicKey) await this.loadPublicKey();
-    const jwe = await new CompactEncrypt(encodedJws)
+    const jwe = await new CompactEncrypt(new TextEncoder().encode(jwt))
       .setProtectedHeader({
-        alg: JwtService.JWE_ALG,
-        enc: JwtService.JWE_ENC,
+        alg: JwtService.JOSE_ALG,
+        enc: JwtService.JOSE_ENC,
       })
-      .encrypt(this.publicKey!);
+      .encrypt(this.options.encryptKeys.public);
 
-    return { bearerToken: jwe };
+    return jwe;
   }
 
-  async decryptJwe(jwe: EncryptedToken): Promise<string> {
-    if (null === this.privateKey) await this.loadPrivateKey();
-    const { plaintext: encodedJws } = await compactDecrypt(
-      jwe,
-      this.privateKey!,
+  async verify(jwe: string): Promise<JWTPayload> {
+    const jwt = await compactDecrypt(jwe, this.options.encryptKeys.private, {
+      keyManagementAlgorithms: [JwtService.JOSE_ALG],
+      contentEncryptionAlgorithms: [JwtService.JOSE_ENC],
+    });
+
+    const { payload } = await jwtVerify(
+      jwt.plaintext,
+      this.options.signKeys.public,
       {
-        keyManagementAlgorithms: [JwtService.JWE_ALG],
-        contentEncryptionAlgorithms: [JwtService.JWE_ENC],
+        algorithms: [JwtService.JWT_ALG],
+        audience: this.options.audience,
+        issuer: this.options.issuer,
+        requiredClaims: ['user'],
+        typ: 'JWT',
       },
     );
 
-    const jws = new TextDecoder().decode(encodedJws);
-    return jws;
-  }
-
-  async verifyJwe(jwe: EncryptedToken): Promise<DecryptedToken> {
-    const jws = await this.decryptJwe(jwe);
-    const { payload } = await jwtVerify(jws, this.secret, {
-      issuer: this.issuer,
-      algorithms: [JwtService.JWS_ALG],
-      maxTokenAge: this.expiresIn,
-    });
-    return payload as DecryptedToken;
+    return payload;
   }
 }
