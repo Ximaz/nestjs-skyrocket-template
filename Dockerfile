@@ -30,8 +30,6 @@ COPY prisma/ ./prisma/
 
 RUN pnpm prisma:generate
 
-RUN rm -rf ./prisma/
-
 COPY --from=build /app/dist /app/dist
 
 ENV NODE_ENV=production
