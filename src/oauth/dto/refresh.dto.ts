@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { IsString, ValidateNested } from 'class-validator';
-import { BearerTokenDto } from './bearer-token.dto.js';
+import { BearerTokenResource } from '../resources/bearer-token.resource.js';
 
 export class OauthRefreshRequestDto {
   @IsString()
@@ -15,11 +15,11 @@ export class OauthRefreshRequestDto {
 
 export class OauthRefreshResponseDto {
   @ValidateNested()
-  @Type(() => BearerTokenDto)
+  @Type(() => BearerTokenResource)
   @Expose({ name: 'bearer_token' })
   @ApiProperty({
     description: 'The new OAuth2.0 bearer token.',
-    type: BearerTokenDto,
+    type: BearerTokenResource,
   })
-  readonly bearerToken: BearerTokenDto;
+  readonly bearerToken: BearerTokenResource;
 }

@@ -1,8 +1,10 @@
-import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Global, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtService, JwtServiceKeyPathOptions } from './jwt.service.js';
 
+@Global()
 @Module({
+  imports: [ConfigModule],
   providers: [
     {
       provide: JwtService,

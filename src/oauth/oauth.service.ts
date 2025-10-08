@@ -1,24 +1,24 @@
 import {
   BadRequestException,
   Injectable,
-  Logger,
   LoggerService,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
-import { plainToInstance } from 'class-transformer';
-import { validateOrReject } from 'class-validator';
-import { OpenIdUserInfo } from './dto/open-id-user-info.dto.js';
-import { BearerTokenDto } from './dto/bearer-token.dto.js';
-import { IOAuthProvider } from 'src/types/IOauthProvider.js';
+import { OpenIdUserInfoResource } from './resources/open-id-user-info.resource.js';
+import { BearerTokenResource } from './resources/bearer-token.resource.js';
+import { IOAuthProvider } from './entities/IOauthProvider.js';
+import { UsersService } from '../users/users.service.js';
+import { JwtService } from '../jwt/jwt.service.js';
 
 @Injectable()
 export class OauthService {
-  private readonly loggerService: LoggerService = new Logger();
-
   constructor(
     private readonly oauthProviders: Record<string, IOAuthProvider>,
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly loggerService: LoggerService,
   ) {}
 
   authorization(
@@ -52,7 +52,7 @@ export class OauthService {
       code: string;
       state: string;
     },
-  ): Promise<{ bearerToken: BearerTokenDto; openIdUserInfo: OpenIdUserInfo }> {
+  ): Promise<{ bearerToken: string; openIdUserInfo: OpenIdUserInfoResource }> {
     const oauthProvider = this.oauthProviders[provider];
     if (undefined === oauthProvider) {
       throw new NotFoundException(`Unknown OAuth2.0 provider : ${provider}`);
@@ -78,24 +78,20 @@ export class OauthService {
 
     const data = (await response.json()) as unknown;
 
-    this.loggerService.debug?.(JSON.stringify(data));
+    const bearerToken = await BearerTokenResource.createResource(data);
 
-    const bearerToken = plainToInstance(BearerTokenDto, data, {
-      excludeExtraneousValues: true,
-    });
+    await this.revoke(provider, bearerToken.accessToken, 'access_token');
+    if (bearerToken.refreshToken) {
+      await this.revoke(provider, bearerToken.refreshToken, 'refresh_token');
+    }
 
-    let openIdUserInfo: OpenIdUserInfo;
+    let openIdUserInfo: OpenIdUserInfoResource;
     if (bearerToken.idToken) {
-      openIdUserInfo = plainToInstance(
-        OpenIdUserInfo,
+      openIdUserInfo = await OpenIdUserInfoResource.createResource(
         jwt.decode(bearerToken.idToken, {
           json: true,
         }),
-        {
-          excludeExtraneousValues: true,
-        },
       );
-      await validateOrReject(openIdUserInfo);
     } else {
       openIdUserInfo = await this.getUserInfo(
         oauthProvider,
@@ -103,13 +99,32 @@ export class OauthService {
       );
     }
 
-    return { bearerToken, openIdUserInfo };
+    try {
+      const oldOpenIdUserInfo =
+        await this.usersService.retrieveMe(openIdUserInfo);
+
+      const newOpenIdUserInfo = await OpenIdUserInfoResource.createResource({
+        ...oldOpenIdUserInfo,
+        ...openIdUserInfo,
+      });
+
+      await this.usersService.updateMe(openIdUserInfo, newOpenIdUserInfo);
+    } catch {
+      await this.usersService.create(openIdUserInfo);
+    }
+
+    const apiBearerToken = await this.jwtService.create(
+      { user: openIdUserInfo },
+      60 * 60 * 24 * 7,
+    );
+
+    return { bearerToken: apiBearerToken, openIdUserInfo };
   }
 
   async refresh(
     provider: string,
     refreshToken: string,
-  ): Promise<BearerTokenDto> {
+  ): Promise<BearerTokenResource> {
     const oauthProvider = this.oauthProviders[provider];
     if (undefined === oauthProvider) {
       throw new NotFoundException(`Unknown OAuth2.0 provider : ${provider}`);
@@ -136,10 +151,7 @@ export class OauthService {
 
     const data = (await response.json()) as unknown;
 
-    const bearerToken = plainToInstance(BearerTokenDto, data, {
-      excludeExtraneousValues: true,
-    });
-    await validateOrReject(bearerToken);
+    const bearerToken = await BearerTokenResource.createResource(data);
 
     return bearerToken;
   }
@@ -181,7 +193,7 @@ export class OauthService {
   private async getUserInfo(
     oauthProvider: IOAuthProvider,
     accessToken: string,
-  ): Promise<OpenIdUserInfo> {
+  ): Promise<OpenIdUserInfoResource> {
     const response = await fetch(oauthProvider.OPENID_URL, {
       method: 'POST',
       headers: {
@@ -197,10 +209,7 @@ export class OauthService {
 
     const data = (await response.json()) as unknown;
 
-    const openIdUserInfo = plainToInstance(OpenIdUserInfo, data, {
-      excludeExtraneousValues: true,
-    });
-    await validateOrReject(openIdUserInfo);
+    const openIdUserInfo = await OpenIdUserInfoResource.createResource(data);
 
     return openIdUserInfo;
   }

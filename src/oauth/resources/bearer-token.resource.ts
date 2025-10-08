@@ -1,8 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Expose, instanceToPlain, plainToInstance } from 'class-transformer';
+import {
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  validateOrReject,
+} from 'class-validator';
+import { IBearerToken } from '../entities/IBearerToken.js';
 
-export class BearerTokenDto {
+export class BearerTokenResource {
   @IsString()
   @ApiProperty({
     name: 'access_token',
@@ -57,4 +64,22 @@ export class BearerTokenDto {
   })
   @Expose({ name: 'token_type' })
   readonly tokenType: 'Bearer';
+
+  static createEntity(resource: BearerTokenResource): IBearerToken {
+    const entity = instanceToPlain(resource, {
+      excludeExtraneousValues: true,
+    });
+
+    return entity as IBearerToken;
+  }
+
+  static async createResource(entity: unknown): Promise<BearerTokenResource> {
+    const resource = plainToInstance(BearerTokenResource, entity, {
+      excludeExtraneousValues: true,
+    });
+
+    await validateOrReject(resource);
+
+    return resource;
+  }
 }

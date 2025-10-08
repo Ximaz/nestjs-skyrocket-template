@@ -1,8 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import { IsEmail, IsOptional, IsString, IsUrl } from 'class-validator';
+import { Expose, instanceToPlain, plainToInstance } from 'class-transformer';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsUrl,
+  validateOrReject,
+} from 'class-validator';
+import { IOpenIdUserInfo } from '../entities/IOpenIdUserInfo.js';
 
-export class OpenIdUserInfo {
+export class OpenIdUserInfoResource {
+  @IsString()
+  @ApiProperty({
+    description:
+      'The issuer of the ID token. Identifies the OAuth2.0 provider.',
+    example: 'https://accounts.google.com',
+  })
+  @Expose()
+  readonly iss: string;
+
   @IsString()
   @ApiProperty({
     description:
@@ -43,4 +59,24 @@ export class OpenIdUserInfo {
   })
   @Expose()
   readonly picture?: string;
+
+  static createEntity(resource: OpenIdUserInfoResource): IOpenIdUserInfo {
+    const entity = instanceToPlain(resource, {
+      excludeExtraneousValues: true,
+    });
+
+    return entity as IOpenIdUserInfo;
+  }
+
+  static async createResource(
+    entity: unknown,
+  ): Promise<OpenIdUserInfoResource> {
+    const resource = plainToInstance(OpenIdUserInfoResource, entity, {
+      excludeExtraneousValues: true,
+    });
+
+    await validateOrReject(resource);
+
+    return resource;
+  }
 }

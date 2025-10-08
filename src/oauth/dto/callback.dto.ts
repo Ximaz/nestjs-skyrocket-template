@@ -1,8 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, ValidateNested } from 'class-validator';
-import { OpenIdUserInfo } from './open-id-user-info.dto.js';
+import { OpenIdUserInfoResource } from '../resources/open-id-user-info.resource.js';
 import { Type } from 'class-transformer';
-import { BearerTokenDto } from './bearer-token.dto.js';
 
 export class OauthCallbackRequestDto {
   @IsString()
@@ -21,17 +20,16 @@ export class OauthCallbackRequestDto {
 
 export class OauthCallbackResponseDto {
   @ValidateNested()
-  @Type(() => OpenIdUserInfo)
+  @Type(() => OpenIdUserInfoResource)
   @ApiProperty({
     description: 'The OpenID user info returned by the OAuth2.0 provider.',
-    type: OpenIdUserInfo,
+    type: OpenIdUserInfoResource,
   })
-  readonly openIdUserInfo: OpenIdUserInfo;
+  readonly openIdUserInfo: OpenIdUserInfoResource;
 
-  @ValidateNested()
-  @Type(() => BearerTokenDto)
+  @IsString()
   @ApiProperty({
     description: 'The Bearer token to use to make API calls to the provider.',
   })
-  readonly bearerToken: BearerTokenDto;
+  readonly bearerToken: string;
 }

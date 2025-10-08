@@ -169,11 +169,12 @@ export class JwtService {
     return await JwtService.exportKeyPairs(options);
   }
 
-  async create(payload: JWTPayload, expiresIn: number) {
+  async create(payload: JWTPayload, expiresIn: number /* in seconds */) {
+    const now = new Date();
     const jwt = await new SignJWT(payload)
       .setProtectedHeader({ alg: JwtService.JWT_ALG, typ: 'JWT' })
-      .setIssuedAt()
-      .setExpirationTime(new Date(Date.now() + expiresIn))
+      .setIssuedAt(now)
+      .setExpirationTime(new Date(now.getTime() + expiresIn * 1000))
       .setAudience(this.options.audience)
       .setIssuer(this.options.issuer)
       .sign(this.options.signKeys.private);

@@ -14,6 +14,7 @@ import {
   SwaggerModule,
 } from '@nestjs/swagger';
 import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
+import fastifyCompress from '@fastify/compress';
 
 const getSwaggerDocumentConfig = (): Omit<OpenAPIObject, 'paths'> =>
   new DocumentBuilder()
@@ -54,7 +55,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.register(import('@fastify/compress'), {
+  await app.register(fastifyCompress, {
     brotliOptions: { params: { [constants.BROTLI_PARAM_QUALITY]: 1 } },
   });
 
